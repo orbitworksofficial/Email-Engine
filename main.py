@@ -119,4 +119,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("ai_email_engine.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("ai_email_engine.main:app", host=settings.HOST, port=settings.PORT, reload=(settings.ENVIRONMENT != "production"))

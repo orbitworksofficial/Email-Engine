@@ -14,6 +14,8 @@ except ImportError:
 class Settings(BaseSettings):
 
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", "8000"))
     APP_SECRET_KEY: str = os.getenv("APP_SECRET_KEY", "default-dev-secret-key-32-characters-min")
     DEFAULT_TENANT_ID: str = os.getenv("DEFAULT_TENANT_ID", "00000000-0000-0000-0000-000000000001")
     PII_ENCRYPTION_KEY: str = os.getenv("PII_ENCRYPTION_KEY", "default-pii-encryption-key-32-bytes!")
