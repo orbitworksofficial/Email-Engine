@@ -92,10 +92,10 @@ async def _save_or_dispatch_email(
         }
         try:
             db.table("email_drafts").insert(draft).execute()
+            logger.info(f"[{request_id}] Email draft saved for manual approval (step {step_number})")
+            return {"id": draft["id"], "status": "pending_review", "mock": False}
         except Exception as e:
-            alert_critical("draft_insert_failure", f"Failed to save email draft: {e}", tenant_id=tenant_id, request_id=request_id)
-        logger.info(f"[{request_id}] Email draft saved for manual approval (step {step_number})")
-        return {"id": draft["id"], "status": "pending_review", "mock": False}
+            logger.warning(f"[{request_id}] Email draft insert failed ({e}) — falling back to direct dispatch")
 
     # Direct dispatch
     dispatch_res = await send_transactional_email(

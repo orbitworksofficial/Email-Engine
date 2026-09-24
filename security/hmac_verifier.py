@@ -61,11 +61,14 @@ def verify_google_lead_secret(header_secret: Optional[str], expected_secret: str
 
 def verify_linkedin_signature(raw_body: bytes, signature_header: Optional[str], secret: str) -> bool:
     """
-    Verifies LinkedIn Lead Gen webhook HMAC-SHA256 signature.
-    LinkedIn sends X-LI-Signature: sha256=<hex> (same pattern as Meta).
+    Verifies LinkedIn Lead Gen webhook signature.
+    Accepts HMAC-SHA256 hex signature or direct static secret match (for Zapier/Make.com relays).
     """
-    if not signature_header:
+    if not signature_header or not secret:
         return False
+    clean_sig = signature_header.replace("sha256=", "").strip()
+    if hmac.compare_digest(clean_sig.lower(), secret.strip().lower()):
+        return True
     return verify_hmac_sha256(raw_body, signature_header, secret)
 
 
