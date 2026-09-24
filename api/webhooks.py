@@ -250,7 +250,7 @@ async def ingest_meta_lead(
 ):
     """POST payload — verified via META_APP_SECRET (App Dashboard → Settings → Basic)."""
     raw_body = await request.body()
-    if _should_verify_signatures():
+    if _should_verify_signatures() and not api_key_tenant:
         if not settings.META_APP_SECRET or settings.META_APP_SECRET == "meta_app_secret_key":
             raise HTTPException(status_code=500, detail="META_APP_SECRET not configured")
         if not verify_meta_signature(raw_body, x_hub_signature_256, settings.META_APP_SECRET):
@@ -277,7 +277,7 @@ async def ingest_linkedin_lead(
     api_key_tenant: Optional[str] = Depends(optional_api_key),
 ):
     raw_body = await request.body()
-    if _should_verify_signatures():
+    if _should_verify_signatures() and not api_key_tenant:
         if not verify_linkedin_signature(raw_body, x_li_signature, settings.LINKEDIN_ADS_SECRET):
             raise HTTPException(status_code=401, detail="Invalid LinkedIn HMAC signature")
 
@@ -302,7 +302,7 @@ async def ingest_google_ads_lead(
     api_key_tenant: Optional[str] = Depends(optional_api_key),
 ):
     raw_body = await request.body()
-    if _should_verify_signatures():
+    if _should_verify_signatures() and not api_key_tenant:
         if not verify_google_lead_secret(x_google_lead_secret, settings.GOOGLE_ADS_LEAD_SECRET):
             raise HTTPException(status_code=401, detail="Invalid Google Lead Secret")
 
@@ -327,7 +327,7 @@ async def ingest_calendly_booking(
     api_key_tenant: Optional[str] = Depends(optional_api_key),
 ):
     raw_body = await request.body()
-    if _should_verify_signatures():
+    if _should_verify_signatures() and not api_key_tenant:
         if not verify_calendly_signature(raw_body, x_calendly_hook_signature, settings.CALENDLY_WEBHOOK_SECRET):
             raise HTTPException(status_code=401, detail="Invalid Calendly HMAC signature")
 
@@ -352,7 +352,7 @@ async def ingest_website_lead(
     api_key_tenant: Optional[str] = Depends(optional_api_key),
 ):
     raw_body = await request.body()
-    if _should_verify_signatures():
+    if _should_verify_signatures() and not api_key_tenant:
         if not verify_website_signature(raw_body, x_webhook_signature, settings.WEBSITE_WEBHOOK_SECRET):
             raise HTTPException(status_code=401, detail="Invalid website webhook signature")
 
