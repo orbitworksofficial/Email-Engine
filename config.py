@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     GOOGLE_ADS_LEAD_SECRET: str = os.getenv("GOOGLE_ADS_LEAD_SECRET", "google_ads_lead_secret_key")
     LINKEDIN_ADS_SECRET: str = os.getenv("LINKEDIN_ADS_SECRET", "linkedin_lead_secret_key")
     WEBSITE_WEBHOOK_SECRET: str = os.getenv("WEBSITE_WEBHOOK_SECRET", "website_webhook_secret_key")
+    CRM_WEBHOOK_SECRET: str = os.getenv("CRM_WEBHOOK_SECRET", "custom_crm_webhook_secret_key")
+    CRM_CALLBACK_URL: Optional[str] = os.getenv("CRM_CALLBACK_URL")
+
 
     ALLOW_UNSIGNED_WEBHOOKS: bool = os.getenv("ALLOW_UNSIGNED_WEBHOOKS", "false").lower() == "true"
 

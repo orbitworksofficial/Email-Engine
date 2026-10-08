@@ -28,9 +28,10 @@ def test_unsigned_webhook_rejected():
     assert response.status_code == 401, f"Expected 401 Unauthorized for unsigned webhook, got {response.status_code}"
 
 def test_website_webhook_ingestion():
+    import uuid
     payload = {
         "full_name": "Test User",
-        "email": "testuser@orbitworks.ai",
+        "email": f"testuser_{uuid.uuid4().hex[:8]}@orbitworks.ai",
         "company_name": "Acme Corp",
         "notes": "Looking for lead automation"
     }
@@ -44,6 +45,7 @@ def test_website_webhook_ingestion():
     assert response.status_code == 202, f"Expected 202 Accepted, got {response.status_code}"
     data = response.json()
     assert data["status"] == "accepted"
+
 
 
 
@@ -106,10 +108,11 @@ def test_provider_payload_normalization_shapes():
 
 
 def test_pydantic_schema_validation_rejection():
+    import uuid
     from unittest.mock import patch
     with patch.object(settings, "ALLOW_UNSIGNED_WEBHOOKS", True):
         # 1. Invalid website payload (missing required email field)
-        invalid_payload = {"company_name": "No Email Corp"}
+        invalid_payload = {"company_name": f"No Email Corp {uuid.uuid4().hex[:8]}"}
         raw_body = json.dumps(invalid_payload).encode("utf-8")
         response = client.post(
             "/api/v1/webhooks/website",
@@ -119,7 +122,7 @@ def test_pydantic_schema_validation_rejection():
         assert response.status_code == 422, f"Expected 422 Unprocessable Entity, got {response.status_code}"
 
         # 2. Garbage Meta Ads payload (missing required email and full_name)
-        garbage_meta = {"junk_field": "whatever"}
+        garbage_meta = {"junk_field": f"whatever_{uuid.uuid4().hex[:8]}"}
         raw_meta = json.dumps(garbage_meta).encode("utf-8")
         res_meta = client.post(
             "/api/v1/webhooks/meta-ads",
@@ -129,7 +132,7 @@ def test_pydantic_schema_validation_rejection():
         assert res_meta.status_code == 422, f"Expected 422 Unprocessable Entity for meta_ads, got {res_meta.status_code}"
 
         # 3. Garbage Google Ads payload
-        garbage_google = {"invalid": True}
+        garbage_google = {"invalid": True, "nonce": uuid.uuid4().hex[:8]}
         raw_google = json.dumps(garbage_google).encode("utf-8")
         res_google = client.post(
             "/api/v1/webhooks/google-ads",
@@ -139,12 +142,36 @@ def test_pydantic_schema_validation_rejection():
         assert res_google.status_code == 422, f"Expected 422 Unprocessable Entity for google_ads, got {res_google.status_code}"
 
 
+
+def test_crm_webhook_ingestion():
+    import uuid
+    payload = {
+        "lead_id": f"crm_lead_{uuid.uuid4().hex[:8]}",
+        "email": f"crmlead_{uuid.uuid4().hex[:8]}@orbitworks.ai",
+        "full_name": "CRM Lead User",
+        "company_name": "CRM Enterprise",
+        "notes": "Direct ingestion from Custom CRM"
+    }
+    raw_body = json.dumps(payload).encode("utf-8")
+    sig = hmac.new(settings.CRM_WEBHOOK_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+    response = client.post(
+        "/api/v1/webhooks/crm",
+        content=raw_body,
+        headers={"Content-Type": "application/json", "X-CRM-Signature": f"sha256={sig}"}
+    )
+    assert response.status_code == 202, f"Expected 202 Accepted, got {response.status_code}"
+    data = response.json()
+    assert data["status"] == "accepted"
+
+
+
 if __name__ == "__main__":
     import sys
     tests = [
         test_meta_webhook_challenge_verification,
         test_unsigned_webhook_rejected,
         test_website_webhook_ingestion,
+        test_crm_webhook_ingestion,
         test_provider_payload_normalization_shapes,
         test_pydantic_schema_validation_rejection,
     ]
@@ -160,4 +187,5 @@ if __name__ == "__main__":
             failed += 1
     print(f"\n{passed}/{passed + failed} webhook tests passed")
     sys.exit(0 if failed == 0 else 1)
+
 
