@@ -139,7 +139,16 @@ async def _save_or_dispatch_email(
         event_name="ai_email_sent",
         params={"lead_id": lead_id, "sequence_step": step_number, "resend_message_id": dispatch_res.get("id")},
     )
+    from ai_email_engine.services.crm_sync import notify_crm_event
+    await notify_crm_event(
+        event_type="email_sent",
+        lead_id=lead_id,
+        email=email,
+        tenant_id=tenant_id,
+        details={"step_number": step_number, "subject": subject, "resend_message_id": dispatch_res.get("id")}
+    )
     return dispatch_res
+
 
 
 async def process_new_lead_sequence(

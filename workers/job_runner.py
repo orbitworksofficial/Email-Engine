@@ -56,8 +56,9 @@ async def _execute_job(tenant_id: str, provider: str, payload: Dict[str, Any]) -
     set_tenant_session_context(get_db_client(), tenant_id)
     from ai_email_engine.api.webhooks import extract_provider_lead_payload
     normalized_payload = extract_provider_lead_payload(provider, payload)
-    if provider in ("meta_ads", "linkedin_ads", "google_ads", "website"):
+    if provider in ("meta_ads", "linkedin_ads", "google_ads", "website", "crm"):
         return await process_new_lead_sequence(tenant_id, provider, normalized_payload)
+
     elif provider == "calendly":
         return await handle_calendly_booking_event(tenant_id, normalized_payload)
     elif provider == "resend":

@@ -80,3 +80,17 @@ def verify_website_signature(raw_body: bytes, signature_header: Optional[str], s
     if not signature_header:
         return False
     return verify_hmac_sha256(raw_body, signature_header, secret)
+
+
+def verify_crm_signature(raw_body: bytes, signature_header: Optional[str], secret: str) -> bool:
+    """
+    Verifies Custom CRM webhook payload signature via X-CRM-Signature header.
+    Accepts HMAC-SHA256 signature or static API key comparison.
+    """
+    if not signature_header or not secret:
+        return False
+    clean_sig = signature_header.replace("sha256=", "").strip()
+    if hmac.compare_digest(clean_sig.lower(), secret.strip().lower()):
+        return True
+    return verify_hmac_sha256(raw_body, signature_header, secret)
+

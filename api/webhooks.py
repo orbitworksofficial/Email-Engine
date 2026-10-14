@@ -13,6 +13,7 @@ from ai_email_engine.security.hmac_verifier import (
     verify_google_lead_secret,
     verify_linkedin_signature,
     verify_website_signature,
+    verify_crm_signature,
 )
 from ai_email_engine.security.api_key_auth import optional_api_key
 from ai_email_engine.security.rate_limiter import is_rate_limited
@@ -24,6 +25,7 @@ from ai_email_engine.api.schemas import (
     LinkedInLeadPayload,
     GoogleAdsLeadPayload,
     WebsiteLeadPayload,
+    CRMLeadPayload,
     CalendlyWebhookPayload,
     ResendEventPayload,
 )
@@ -69,9 +71,12 @@ def _validate_webhook_payload(provider: str, raw_body: bytes) -> dict:
     try:
         if provider == "website":
             WebsiteLeadPayload(**normalized)
+        elif provider == "crm":
+            CRMLeadPayload(**normalized)
         elif provider == "meta_ads":
             MetaLeadFormPayload(**normalized)
         elif provider == "linkedin_ads":
+
             if normalized.get("requires_api_fetch"):
                 LinkedInIDOnlyPayload(**normalized)
             else:
@@ -386,4 +391,34 @@ async def ingest_resend_event(
     import asyncio
     asyncio.create_task(run_job_with_retry(tenant_id, "resend", payload, payload_hash))
     return JSONResponse(status_code=202, content={"status": "accepted", "message": "Resend event queued"})
+
+
+# ── Custom CRM Ingestion ──────────────────────────────────────────────────────
+
+@router.post("/crm")
+async def ingest_crm_lead(
+    request: Request,
+    x_crm_signature: Optional[str] = Header(None, alias="X-CRM-Signature"),
+    api_key_tenant: Optional[str] = Depends(optional_api_key),
+):
+    """
+    Ingests leads directly from Kashif's Custom CRM.
+    Header: X-CRM-Signature or X-API-Key
+    """
+    raw_body = await request.body()
+    if _should_verify_signatures() and not api_key_tenant:
+        if not verify_crm_signature(raw_body, x_crm_signature, settings.CRM_WEBHOOK_SECRET):
+            raise HTTPException(status_code=401, detail="Invalid CRM webhook signature")
+
+    tenant_id = _get_tenant_id(api_key_tenant)
+    _check_rate_limit(tenant_id, "crm")
+    is_dup, payload_hash = _insert_webhook_event_or_dedup(tenant_id, "crm", raw_body)
+    if is_dup:
+        return JSONResponse(status_code=200, content={"status": "success", "message": "Duplicate event ignored"})
+
+    payload = _validate_webhook_payload("crm", raw_body)
+    import asyncio
+    asyncio.create_task(run_job_with_retry(tenant_id, "crm", payload, payload_hash))
+    return JSONResponse(status_code=202, content={"status": "accepted", "message": "CRM lead queued"})
+
 

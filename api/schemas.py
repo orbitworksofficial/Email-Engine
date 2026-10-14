@@ -49,6 +49,20 @@ class WebsiteLeadPayload(BaseModel):
     utm_campaign: Optional[str] = None
 
 
+class CRMLeadPayload(BaseModel):
+    lead_id: Optional[str] = None
+    email: str
+    full_name: str
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    notes: Optional[str] = None
+    channel_source: Optional[str] = "custom_crm"
+    utm_source: Optional[str] = "crm"
+    utm_medium: Optional[str] = "cpc"
+    utm_campaign: Optional[str] = None
+
+
+
 class CalendlyWebhookPayload(BaseModel):
     event: str
     payload: Dict[str, Any]
